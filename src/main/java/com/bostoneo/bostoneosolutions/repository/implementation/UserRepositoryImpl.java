@@ -47,6 +47,7 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
         if (getEmailCount(user.getEmail().trim().toLowerCase()) >0) throw new ApiException("Email already in use. Please use a different email");
         //Save new user
         try{
+            //gives us the id of the user that just got saved in the db
             KeyHolder holder = new GeneratedKeyHolder();
             //getting the parameters for the new user
             SqlParameterSource parameters = getSqlParameterSource(user);
@@ -61,7 +62,7 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
             //Save URL in verification table
             jdbc.update(INSERT_ACCOUNT_VERIFICATION_URL_QUERY, of("userId", user.getId(), "url", verificationUrl));
             //Send email to user with verification URL
-            //emailServoce.sendVerificationUrl(user.getFirstName(), user.getEmail(), verificationUrl, ACCOUNT);
+            //emailService.sendVerificationUrl(user.getFirstName(), user.getEmail(), verificationUrl, ACCOUNT);
             user.setEnabled(false);
             user.setNotLocked(true);
             //Return the newly created user

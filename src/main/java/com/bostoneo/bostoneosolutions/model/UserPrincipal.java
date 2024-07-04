@@ -16,6 +16,11 @@ public class UserPrincipal implements UserDetails {
 
     private final User user;
     private final String permissions; //USER:READ, CUSTOMER:READ
+
+
+    /* This method processes a comma-separated string of permissions,
+     * creates SimpleGrantedAuthority objects for each permission, and returns them as a collection.
+     * This collection is then used by Spring Security to determine the authorities granted to the user. */
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return stream(permissions.split(",".trim())).map(SimpleGrantedAuthority::new).collect(toList());

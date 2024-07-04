@@ -11,9 +11,18 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
+
+import java.util.Arrays;
+import java.util.List;
 
 import static org.springframework.http.HttpMethod.DELETE;
 import static org.springframework.http.HttpMethod.OPTIONS;
@@ -24,7 +33,7 @@ import static org.springframework.security.config.http.SessionCreationPolicy.STA
 @RequiredArgsConstructor
 @EnableWebSecurity
 public class SecurityConfig {
-    private static final String[] PUBLIC_URLS = {"/user/login/**"};
+    private static final String[] PUBLIC_URLS = {"/user/login/**","/user/register/**"};
 
     private final BCryptPasswordEncoder encoder;
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
@@ -33,15 +42,38 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
-        http.csrf(csrf -> csrf.disable()).cors(withDefaults());
-        http.sessionManagement(session -> session.sessionCreationPolicy(STATELESS));
-        http.authorizeHttpRequests(request -> request.requestMatchers(PUBLIC_URLS).permitAll());
-        http.authorizeHttpRequests(request -> request.requestMatchers(OPTIONS).permitAll()); // Not needed
-        http.authorizeHttpRequests(request -> request.requestMatchers(DELETE, "/user/delete/**").hasAnyAuthority("DELETE:USER"));
-        http.authorizeHttpRequests(request -> request.requestMatchers(DELETE, "/customer/delete/**").hasAnyAuthority("DELETE:CUSTOMER"));
-        http.exceptionHandling(exception -> exception.accessDeniedHandler(customAccessDeniedHandler).authenticationEntryPoint(customAuthenticationEntryPoint));
-        http.authorizeHttpRequests(request -> request.anyRequest().authenticated());
+        http
+                .csrf(AbstractHttpConfigurer::disable)
+                .cors(configure -> configure.configurationSource(corsConfigurationSource()))
+                .sessionManagement(session -> session.sessionCreationPolicy(STATELESS))
+                .exceptionHandling(exception ->
+                        exception.accessDeniedHandler(customAccessDeniedHandler)
+                                .authenticationEntryPoint(customAuthenticationEntryPoint))
+                .authorizeHttpRequests(request ->
+                        request.requestMatchers(PUBLIC_URLS).permitAll()
+                                .requestMatchers(OPTIONS).permitAll()
+                                .requestMatchers(DELETE, "/user/delete/**").hasAnyAuthority("DELETE:USER")
+                                .requestMatchers(DELETE, "/customer/delete/**").hasAnyAuthority("DELETE:CUSTOMER")
+                                .anyRequest().authenticated());
         return http.build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+
+        var corsConfiguration = new CorsConfiguration();
+        corsConfiguration.setAllowCredentials(true);
+        corsConfiguration.setAllowedOrigins(List.of("http://localhost:4200", "http://localhost:3000", "http://securecapita.org"));
+        //corsConfiguration.setAllowedOrigins(Arrays.asList("*"));
+        corsConfiguration.setAllowedHeaders(Arrays.asList("Origin", "Access-Control-Allow-Origin", "Content-Type",
+                "Accept", "Jwt-Token", "Authorization", "Origin", "Accept", "X-Requested-With",
+                "Access-Control-Request-Method", "Access-Control-Request-Headers"));
+        corsConfiguration.setExposedHeaders(Arrays.asList("Origin", "Content-Type", "Accept", "Jwt-Token", "Authorization",
+                "Access-Control-Allow-Origin", "Access-Control-Allow-Origin", "Access-Control-Allow-Credentials", "File-Name"));
+        corsConfiguration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        var source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", corsConfiguration);
+        return source;
     }
 
     @Bean
@@ -51,4 +83,6 @@ public class SecurityConfig {
         authProvider.setPasswordEncoder(encoder);
         return new ProviderManager(authProvider);
     }
+
 }
+

@@ -2,8 +2,8 @@ spring:
   autoconfigure:
     exclude: org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
   datasource:
-    url: jdbc:mysql://127.0.0.1:3306/bostoneosolutions?useSSL=false&useUnicode=yes&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&serverTimezone=UTC
-    password:
+    url: jdbc:mysql://127.0.0.1:3306/bostoneosolutions?useSSL=false&useUnicode=yes&characterEncoding=UTF-8&allowPublicKeyRetrieval=true&serverTimezone=UTC&useLegacyDatetimeCode=false
+    password: bostoneo
     username: root
   jpa:
     database-platform: org.hibernate.dialect.MySQL8InnoDBDialect
@@ -18,5 +18,5 @@ spring:
         format_sql: true
   sql:
     init:
-      mode: never
+      mode: never #change to always when we have all the queries so the app can run the queries
       continue-on-error: false
