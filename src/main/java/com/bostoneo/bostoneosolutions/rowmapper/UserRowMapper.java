@@ -21,7 +21,7 @@ public class UserRowMapper implements RowMapper<User> {
                 .bio(resultSet.getString("bio"))
                 .imageUrl(resultSet.getString("image_url"))
                 .enabled(resultSet.getBoolean("enabled"))
-                .isUsingMfa(resultSet.getBoolean("using_mfa"))
+                .isUsingMFA(resultSet.getBoolean("using_mfa"))
                 .isNotLocked(resultSet.getBoolean("non_locked"))
                 .createdAt(resultSet.getTimestamp("created_at").toLocalDateTime())
                 .build();

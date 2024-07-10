@@ -1,10 +1,13 @@
 package com.bostoneo.bostoneosolutions.dto;
 
-import lombok.Data;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
-@Data
+@Setter
+@Getter
+@AllArgsConstructor
+@NoArgsConstructor
 public class UserDTO {
 
     private Long id;

@@ -27,8 +27,6 @@ public class User {
     @NotEmpty(message = "Last name cannot be empty")
     private String lastName;
 
-    @NotEmpty(message = "Email name cannot be empty")
-    @Email(message = "Invalid email. Please enter a valid email address")
     private String email;
 
     @NotEmpty(message = "Password name cannot be empty")
@@ -40,6 +38,6 @@ public class User {
     private String imageUrl;
     private boolean enabled;
     private boolean isNotLocked;
-    private boolean isUsingMfa;
+    private boolean isUsingMFA;
     private LocalDateTime createdAt;
 }

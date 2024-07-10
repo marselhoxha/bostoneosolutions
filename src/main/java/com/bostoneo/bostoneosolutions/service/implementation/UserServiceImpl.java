@@ -1,7 +1,6 @@
 package com.bostoneo.bostoneosolutions.service.implementation;
 
 import com.bostoneo.bostoneosolutions.dto.UserDTO;
-import com.bostoneo.bostoneosolutions.dtomapper.UserDTOMapper;
 import com.bostoneo.bostoneosolutions.model.Role;
 import com.bostoneo.bostoneosolutions.model.User;
 import com.bostoneo.bostoneosolutions.repository.RoleRepository;
@@ -20,12 +19,22 @@ public class UserServiceImpl implements UserService {
     private final RoleRepository<Role> roleRoleRepository;
     @Override
     public UserDTO createUser(User user) {
-        return fromUser(userRepository.create(user));
+        return mapToUserDTO(userRepository.create(user));
     }
 
     @Override
     public UserDTO getUserByEmail(String email) {
-        return fromUser(userRepository.getUserByEmail(email));
+        return mapToUserDTO(userRepository.getUserByEmail(email));
+    }
+
+    @Override
+    public void sendVerificationCode(UserDTO user) {
+        userRepository.sendVerificationCode(user);
+    }
+
+    @Override
+    public UserDTO verifyCode(String email, String code) {
+        return mapToUserDTO(userRepository.verifyCode(email, code));
     }
 
     private UserDTO mapToUserDTO(User user) {

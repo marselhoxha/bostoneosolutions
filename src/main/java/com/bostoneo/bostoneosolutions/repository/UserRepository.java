@@ -1,5 +1,6 @@
 package com.bostoneo.bostoneosolutions.repository;
 
+import com.bostoneo.bostoneosolutions.dto.UserDTO;
 import com.bostoneo.bostoneosolutions.model.User;
 
 import java.util.Collection;
@@ -13,6 +14,10 @@ public interface UserRepository<T extends User> {
     Boolean delete(Long id); //boolean to determine if the operation was successful
 
     User getUserByEmail(String email);
+
+    void sendVerificationCode(UserDTO user);
+
+    User verifyCode(String email, String code);
 
     /* More Complex Operations */
 }
