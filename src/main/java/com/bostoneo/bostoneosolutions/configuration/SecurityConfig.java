@@ -1,5 +1,6 @@
 package com.bostoneo.bostoneosolutions.configuration;
 
+import com.bostoneo.bostoneosolutions.filter.CustomAuthorizationFilter;
 import com.bostoneo.bostoneosolutions.handler.CustomAccessDeniedHandler;
 import com.bostoneo.bostoneosolutions.handler.CustomAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +40,7 @@ public class SecurityConfig {
     private final CustomAccessDeniedHandler customAccessDeniedHandler;
     private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
     private final UserDetailsService userDetailsService;
+    private final CustomAuthorizationFilter customAuthorizationFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
@@ -55,6 +57,7 @@ public class SecurityConfig {
                                 .requestMatchers(DELETE, "/user/delete/**").hasAnyAuthority("DELETE:USER")
                                 .requestMatchers(DELETE, "/customer/delete/**").hasAnyAuthority("DELETE:CUSTOMER")
                                 .anyRequest().authenticated());
+        http.addFilterBefore(customAuthorizationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 

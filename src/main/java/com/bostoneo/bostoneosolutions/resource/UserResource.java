@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -58,6 +59,21 @@ public class UserResource {
                         .message(String.format("User account created for user %s", user.getFirstName()))
                         .status(CREATED)
                         .statusCode(CREATED.value())
+                        .build());
+    }
+
+    @GetMapping("/profile")
+    public ResponseEntity<HttpResponse> profile(Authentication authentication) throws InterruptedException {
+        TimeUnit.SECONDS.sleep(4);
+        UserDTO user = userService.getUserByEmail(authentication.getName());
+        System.out.println(authentication.getPrincipal());
+        return ResponseEntity.ok().body(
+                HttpResponse.builder()
+                        .timeStamp(now().toString())
+                        .data(of("user", user))
+                        .message("Profile Retrieved")
+                        .status(OK)
+                        .statusCode(OK.value())
                         .build());
     }
 
