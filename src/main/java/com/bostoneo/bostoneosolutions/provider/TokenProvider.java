@@ -7,9 +7,11 @@ import com.auth0.jwt.exceptions.InvalidClaimException;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.bostoneo.bostoneosolutions.model.UserPrincipal;
+import com.bostoneo.bostoneosolutions.service.UserService;
 import io.micrometer.common.util.StringUtils;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -28,7 +30,10 @@ import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toList;
 
 @Component
+@RequiredArgsConstructor
 public class TokenProvider {
+
+    private final UserService userService;
 
     public static final String AUTHORITIES = "authorities";
     private static final String BOSTONEO_SOLUTIONS_LLC = "BOSTONEO_SOLUTIONS_LLC";
@@ -73,7 +78,7 @@ public class TokenProvider {
     }
 
     public Authentication getAuthentication(String email, List<GrantedAuthority> authorities, HttpServletRequest request){
-        UsernamePasswordAuthenticationToken userPasswordAuthToken = new UsernamePasswordAuthenticationToken(email, null, authorities);
+        UsernamePasswordAuthenticationToken userPasswordAuthToken = new UsernamePasswordAuthenticationToken(userService.getUserByEmail(email), null, authorities);
         userPasswordAuthToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
         return userPasswordAuthToken;
     }

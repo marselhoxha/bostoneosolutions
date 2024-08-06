@@ -1,5 +1,6 @@
 package com.bostoneo.bostoneosolutions.model;
 
+import com.bostoneo.bostoneosolutions.dto.UserDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Collection;
 
+import static com.bostoneo.bostoneosolutions.dtomapper.UserDTOMapper.fromUser;
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toList;
 
@@ -15,7 +17,7 @@ import static java.util.stream.Collectors.toList;
 public class UserPrincipal implements UserDetails {
 
     private final User user;
-    private final String permissions; //USER:READ, CUSTOMER:READ
+    private final Role role;
 
 
     /* This method processes a comma-separated string of permissions,
@@ -23,7 +25,7 @@ public class UserPrincipal implements UserDetails {
      * This collection is then used by Spring Security to determine the authorities granted to the user. */
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return stream(permissions.split(",".trim())).map(SimpleGrantedAuthority::new).collect(toList());
+        return stream(this.role.getPermission().split(",".trim())).map(SimpleGrantedAuthority::new).collect(toList());
     }
 
     @Override
@@ -54,6 +56,10 @@ public class UserPrincipal implements UserDetails {
     @Override
     public boolean isEnabled() {
         return this.user.isEnabled();
+    }
+
+    public UserDTO getUser(){
+        return fromUser(this.user, role);
     }
 
 }
