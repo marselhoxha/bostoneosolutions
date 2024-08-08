@@ -1,6 +1,7 @@
 package com.bostoneo.bostoneosolutions.repository.implementation;
 
 import com.bostoneo.bostoneosolutions.dto.UserDTO;
+import com.bostoneo.bostoneosolutions.enumeration.VerificationType;
 import com.bostoneo.bostoneosolutions.exception.ApiException;
 import com.bostoneo.bostoneosolutions.model.Role;
 import com.bostoneo.bostoneosolutions.model.User;
@@ -31,6 +32,7 @@ import java.util.UUID;
 
 import static com.bostoneo.bostoneosolutions.enumeration.RoleType.ROLE_USER;
 import static com.bostoneo.bostoneosolutions.enumeration.VerificationType.ACCOUNT;
+import static com.bostoneo.bostoneosolutions.enumeration.VerificationType.PASSWORD;
 import static com.bostoneo.bostoneosolutions.query.UserQuery.*;
 import static com.bostoneo.bostoneosolutions.utils.SmsUtils.sendSMS;
 import static java.util.Map.of;
@@ -197,6 +199,77 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
 
         }
     }
+
+    @Override
+    public void resetPassword(String email) {
+        if(getEmailCount(email.trim().toLowerCase()) <= 0)  throw new ApiException("There is no account for this email address");
+        try {
+
+                String expirationDate = format(addDays(new Date(),1), DATE_FORMAT);
+                User user = getUserByEmail(email);
+                String verificationUrl = getVerificationUrl(UUID.randomUUID().toString(), PASSWORD.getType());
+                jdbc.update(DELETE_PASSWORD_VERIFICATION_BY_USER_ID, of("userId", user.getId()));
+                jdbc.update(INSERT_PASSWORD_VERIFICATION_QUERY, of("userId", user.getId(), "url", verificationUrl, "expirationDate", expirationDate));
+                //TODO: send email with url to user
+                log.info("Verification url: {}", verificationUrl);
+
+        }catch (EmptyResultDataAccessException exception) {
+            throw new ApiException("This code is not valid. Please log in again");
+
+        }catch (Exception exception) {
+            throw new ApiException("An error occurred. Please try again");
+
+        }
+    }
+
+    @Override
+    public User verifyPasswordKey(String key) {
+        if(isLinkExpired(key, PASSWORD)) throw new ApiException("This link is expired. Please reset your password again");
+        try {
+            User user = jdbc.queryForObject(SELECT_USER_BY_URL_QUERY, of("url", getVerificationUrl(key, PASSWORD.getType())), new UserRowMapper());
+           // jdbc.update("DELETE_USER_FROM_RESET_PASSWORD_VERIFICATION_QUERY", of("id", user.getId())); //Depends on the business logic, if the link needs to be used once or multiple times
+            return user;
+
+        }catch (EmptyResultDataAccessException exception) {
+            log.error(exception.getMessage());
+            throw new ApiException("This link is not valid. Please reset your password again");
+
+        }catch (Exception exception) {
+            log.error(exception.getMessage());
+            throw new ApiException("An error occurred. Please try again");
+
+        }
+    }
+
+    @Override
+    public void renewPassword(String key, String password, String confirmPassword) {
+        if (!password.equals(confirmPassword)) throw new ApiException("Passwords do not match. Please try again");
+        try {
+            jdbc.update(UPDATE_USER_PASSWORD_BY_URL_QUERY, of("password", encoder.encode(password), "url", getVerificationUrl(key, PASSWORD.getType())));
+            jdbc.update(DELETE_VERIFICATION_BY_URL_QUERY, of("url", getVerificationUrl(key, PASSWORD.getType())));
+
+        }catch (Exception exception) {
+            log.error(exception.getMessage());
+            throw new ApiException("An error occurred. Please try again");
+
+        }
+    }
+
+    private Boolean isLinkExpired(String key, VerificationType password) {
+        try {
+            return jdbc.queryForObject(SELECT_EXPIRATION_BY_URL, of("url", getVerificationUrl(key, password.getType())), Boolean.class);
+
+        }catch (EmptyResultDataAccessException exception) {
+            log.error(exception.getMessage());
+            throw new ApiException("This link is not valid. Please reset your password again");
+
+        }catch (Exception exception) {
+            log.error(exception.getMessage());
+            throw new ApiException("An error occurred. Please try again");
+
+        }
+    }
+
 
     private Boolean isVerificationCodeExpired(String code) {
         try {
