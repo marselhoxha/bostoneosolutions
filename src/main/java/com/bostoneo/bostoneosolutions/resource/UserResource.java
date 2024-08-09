@@ -91,6 +91,7 @@ public class UserResource {
                         .build());
     }
 
+    //START -  To reset password when user is not logged in
     @GetMapping("/verify/code/{email}/{code}")
     public ResponseEntity<HttpResponse> verifyCode(@PathVariable("email") String email, @PathVariable("code") String code ) throws InterruptedException {
         TimeUnit.SECONDS.sleep(4);
@@ -106,7 +107,7 @@ public class UserResource {
                         .build());
     }
 
-    //START -  To reset password when user is not logged in
+
     @GetMapping("/resetpassword/{email}")
     public ResponseEntity<HttpResponse> resetPassword(@PathVariable("email") String email) {
 
@@ -150,6 +151,19 @@ public class UserResource {
     }
 
     //END -  To reset password when user is not logged in
+
+    @GetMapping("/verify/account/{key}")
+    public ResponseEntity<HttpResponse> verifyAccount(@PathVariable("key") String key ){
+
+        return ResponseEntity.ok().body(
+                HttpResponse.builder()
+                        .timeStamp(now().toString())
+                        .message(userService.verifyAccountKey(key).isEnabled() ? "Account already verified" : "Account verified successfully")
+                        .status(OK)
+                        .statusCode(OK.value())
+                        .build());
+    }
+
     private Authentication authenticate (String email, String password){
 
         try {
