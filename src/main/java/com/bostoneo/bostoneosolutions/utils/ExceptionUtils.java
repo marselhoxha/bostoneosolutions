@@ -26,10 +26,14 @@ public class ExceptionUtils {
                 || exception instanceof BadCredentialsException || exception instanceof InvalidClaimException || exception instanceof TokenExpiredException){
 
         } else {
+            System.out.println("Error here 1");
             HttpResponse httpResponse = getHttpResponse(response, "An error occurred. Please try again.", INTERNAL_SERVER_ERROR);
             writeResponse(response, httpResponse);
+
         }
         log.error(exception.getMessage());
+        System.out.println("Error here 2");
+        System.out.println(exception.getMessage());
     }
 
     private static void writeResponse(HttpServletResponse response, HttpResponse httpResponse) {

@@ -79,6 +79,19 @@ public class HandleException extends ResponseEntityExceptionHandler implements E
                         .build(), BAD_REQUEST);
     }
 
+    @ExceptionHandler(ApiException.class)
+    public ResponseEntity<HttpResponse> apiException(ApiException exception) {
+        log.error(exception.getMessage());
+        return new ResponseEntity<>(
+                HttpResponse.builder()
+                        .timeStamp(now().toString())
+                        .reason(exception.getMessage())
+                        .developerMessage(exception.getMessage())
+                        .status(BAD_REQUEST)
+                        .statusCode(BAD_REQUEST.value())
+                        .build(), BAD_REQUEST);
+    }
+
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<HttpResponse> accessDeniedException(AccessDeniedException exception) {
         log.error(exception.getMessage());

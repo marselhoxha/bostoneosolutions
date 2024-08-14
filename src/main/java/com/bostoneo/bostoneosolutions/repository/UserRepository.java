@@ -1,6 +1,7 @@
 package com.bostoneo.bostoneosolutions.repository;
 
 import com.bostoneo.bostoneosolutions.dto.UserDTO;
+import com.bostoneo.bostoneosolutions.form.UpdateForm;
 import com.bostoneo.bostoneosolutions.model.User;
 
 import java.util.Collection;
@@ -26,6 +27,8 @@ public interface UserRepository<T extends User> {
     void renewPassword(String key, String password, String confirmPassword);
 
     T verifyAccountKey(String key);
+
+    T updateUserDetails(UpdateForm user);
 
     /* More Complex Operations */
 }

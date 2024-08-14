@@ -3,6 +3,7 @@ package com.bostoneo.bostoneosolutions.repository.implementation;
 import com.bostoneo.bostoneosolutions.dto.UserDTO;
 import com.bostoneo.bostoneosolutions.enumeration.VerificationType;
 import com.bostoneo.bostoneosolutions.exception.ApiException;
+import com.bostoneo.bostoneosolutions.form.UpdateForm;
 import com.bostoneo.bostoneosolutions.model.Role;
 import com.bostoneo.bostoneosolutions.model.User;
 import com.bostoneo.bostoneosolutions.model.UserPrincipal;
@@ -95,7 +96,19 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
 
     @Override
     public User get(Long id) {
-        return null;
+        try{
+
+            return jdbc.queryForObject(SELECT_USER_BY_ID_QUERY, of("id", id), new UserRowMapper());
+
+        } catch (EmptyResultDataAccessException exception) {
+            log.error(exception.getMessage());
+            throw new ApiException("No user found by id: " + id);
+
+        } catch (Exception exception) {
+            log.error(exception.getMessage());
+            throw new ApiException("An error occurred. Please try again");
+
+        }
     }
 
     @Override
@@ -120,6 +133,18 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
                 .addValue("lastName", user.getLastName())
                 .addValue("email", user.getEmail())
                 .addValue("password", encoder.encode(user.getPassword()));
+    }
+
+    private SqlParameterSource getUserDetailsSqlParameterSource(UpdateForm user) {
+        return new MapSqlParameterSource()
+                .addValue("id", user.getId())
+                .addValue("firstName", user.getFirstName())
+                .addValue("lastName", user.getLastName())
+                .addValue("email", user.getEmail())
+                .addValue("phone", user.getPhone())
+                .addValue("address", user.getAddress())
+                .addValue("title", user.getTitle())
+                .addValue("bio", user.getBio());
     }
 
    private String getVerificationUrl(String key, String type){
@@ -149,7 +174,7 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
             //If any errors, throw exception with proper message
         } catch (EmptyResultDataAccessException exception) {
             log.error(exception.getMessage());
-            throw new ApiException("No user found by email:" + email);
+            throw new ApiException("No user found by email: " + email);
 
         } catch (Exception exception) {
         log.error(exception.getMessage());
@@ -264,6 +289,23 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
             return user;
 
         }catch (Exception exception) {
+            log.error(exception.getMessage());
+            throw new ApiException("An error occurred. Please try again");
+
+        }
+    }
+
+    @Override
+    public User updateUserDetails(UpdateForm user) {
+        try {
+             jdbc.update(UPDATE_USER_DETAILS_QUERY, getUserDetailsSqlParameterSource(user));
+             return get(user.getId());
+
+        }catch (EmptyResultDataAccessException exception) {
+            log.error(exception.getMessage());
+            throw new ApiException("No user found by id: " + user.getId());
+
+        } catch (Exception exception) {
             log.error(exception.getMessage());
             throw new ApiException("An error occurred. Please try again");
 

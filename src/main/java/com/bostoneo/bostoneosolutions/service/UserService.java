@@ -1,6 +1,7 @@
 package com.bostoneo.bostoneosolutions.service;
 
 import com.bostoneo.bostoneosolutions.dto.UserDTO;
+import com.bostoneo.bostoneosolutions.form.UpdateForm;
 import com.bostoneo.bostoneosolutions.model.User;
 
 public interface UserService {
@@ -19,4 +20,8 @@ public interface UserService {
     void renewPassword(String key, String password, String confirmPassword);
 
     UserDTO verifyAccountKey(String key);
+
+    UserDTO getUserById(Long userId);
+
+    UserDTO updateUserDetails(UpdateForm user);
 }

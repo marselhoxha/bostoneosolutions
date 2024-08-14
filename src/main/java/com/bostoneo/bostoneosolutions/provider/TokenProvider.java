@@ -9,7 +9,6 @@ import com.auth0.jwt.exceptions.TokenExpiredException;
 import com.bostoneo.bostoneosolutions.model.UserPrincipal;
 import com.bostoneo.bostoneosolutions.service.UserService;
 import io.micrometer.common.util.StringUtils;
-import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,12 +16,12 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 import static com.auth0.jwt.algorithms.Algorithm.HMAC512;
 import static java.lang.System.currentTimeMillis;
@@ -38,7 +37,7 @@ public class TokenProvider {
     public static final String AUTHORITIES = "authorities";
     private static final String BOSTONEO_SOLUTIONS_LLC = "BOSTONEO_SOLUTIONS_LLC";
     private static final String CUSTOMER_MANAGEMENT_SERVICE = "CUSTOMER_MANAGEMENT_SERVICE";
-    private static final long ACCESS_TOKEN_EXPIRATION_TIME = 1_800_000; //30 min to expire in ms
+    private static final long ACCESS_TOKEN_EXPIRATION_TIME = 432_000_000; //1_800_000 - 30 min to expire in ms
     private static final long REFRESH_TOKEN_EXPIRATION_TIME = 432_000_000; //5 days to expire in ms
     public static final String TOKEN_CANNOT_BE_VERIFIED = "Token cannot be verified";
     @Value("${jwt.secret}")
@@ -47,13 +46,13 @@ public class TokenProvider {
     public String createAccessToken(UserPrincipal userPrincipal){
 
         return JWT.create().withIssuer(BOSTONEO_SOLUTIONS_LLC).withAudience(CUSTOMER_MANAGEMENT_SERVICE)
-                .withIssuedAt(new Date()).withSubject(userPrincipal.getUsername()).withArrayClaim(AUTHORITIES, getClaimsFromUser(userPrincipal))
+                .withIssuedAt(new Date()).withSubject(String.valueOf(userPrincipal.getUser().getId())).withArrayClaim(AUTHORITIES, getClaimsFromUser(userPrincipal))
                 .withExpiresAt(new Date(currentTimeMillis() + ACCESS_TOKEN_EXPIRATION_TIME))
                 .sign(HMAC512(secret.getBytes()));
     }
     public String createRefreshToken(UserPrincipal userPrincipal){
         return JWT.create().withIssuer(BOSTONEO_SOLUTIONS_LLC).withAudience(CUSTOMER_MANAGEMENT_SERVICE)
-                .withIssuedAt(new Date()).withSubject(userPrincipal.getUsername())
+                .withIssuedAt(new Date()).withSubject(String.valueOf(userPrincipal.getUser().getId()))
                 .withExpiresAt(new Date(currentTimeMillis() + REFRESH_TOKEN_EXPIRATION_TIME))
                 .sign(HMAC512(secret.getBytes()));
     }
@@ -72,20 +71,21 @@ public class TokenProvider {
         }
     }
 
+
     public List<GrantedAuthority> getAuthorities(String token){
         String[] claims = getClaimsFromToken(token);
         return stream(claims).map(SimpleGrantedAuthority::new).collect(toList());
     }
 
-    public Authentication getAuthentication(String email, List<GrantedAuthority> authorities, HttpServletRequest request){
-        UsernamePasswordAuthenticationToken userPasswordAuthToken = new UsernamePasswordAuthenticationToken(userService.getUserByEmail(email), null, authorities);
+    public Authentication getAuthentication(Long userId, List<GrantedAuthority> authorities, HttpServletRequest request){
+        UsernamePasswordAuthenticationToken userPasswordAuthToken = new UsernamePasswordAuthenticationToken(userService.getUserById(userId), null, authorities);
         userPasswordAuthToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
         return userPasswordAuthToken;
     }
 
-    public boolean isTokenValid(String email, String token){
+    public boolean isTokenValid(Long userId, String token){
         JWTVerifier verifier = getJWTVerifier();
-        return StringUtils.isNotEmpty(email) && !isTokenExpired(verifier, token);
+        return !Objects.isNull(userId) && !isTokenExpired(verifier, token);
     }
 
     private boolean isTokenExpired(JWTVerifier verifier, String token) {

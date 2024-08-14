@@ -1,6 +1,7 @@
 package com.bostoneo.bostoneosolutions.service.implementation;
 
 import com.bostoneo.bostoneosolutions.dto.UserDTO;
+import com.bostoneo.bostoneosolutions.form.UpdateForm;
 import com.bostoneo.bostoneosolutions.model.Role;
 import com.bostoneo.bostoneosolutions.model.User;
 import com.bostoneo.bostoneosolutions.repository.RoleRepository;
@@ -56,6 +57,18 @@ public class UserServiceImpl implements UserService {
     public UserDTO verifyAccountKey(String key) {
         return mapToUserDTO(userRepository.verifyAccountKey(key));
     }
+
+    @Override
+    public UserDTO getUserById(Long userId) {
+        return mapToUserDTO(userRepository.get(userId));
+
+    }
+
+    @Override
+    public UserDTO updateUserDetails(UpdateForm user) {
+        return mapToUserDTO(userRepository.updateUserDetails(user));
+    }
+
 
     private UserDTO mapToUserDTO(User user) {
         return fromUser(user, roleRoleRepository.getRoleByUserId(user.getId()));

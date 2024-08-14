@@ -20,6 +20,7 @@ public class UserPrincipal implements UserDetails {
     private final Role role;
 
 
+
     /* This method processes a comma-separated string of permissions,
      * creates SimpleGrantedAuthority objects for each permission, and returns them as a collection.
      * This collection is then used by Spring Security to determine the authorities granted to the user. */
