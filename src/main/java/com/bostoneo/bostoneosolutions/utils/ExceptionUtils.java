@@ -23,16 +23,20 @@ public class ExceptionUtils {
 
     public static void processError(HttpServletRequest request, HttpServletResponse response, Exception exception) {
         if(exception instanceof ApiException || exception instanceof DisabledException || exception instanceof LockedException
-                || exception instanceof BadCredentialsException || exception instanceof InvalidClaimException || exception instanceof TokenExpiredException){
+                || exception instanceof BadCredentialsException || exception instanceof InvalidClaimException ){
+            HttpResponse httpResponse = getHttpResponse(response, exception.getMessage(), BAD_REQUEST);
+            writeResponse(response, httpResponse);
+
+        } else if ( exception instanceof TokenExpiredException){
+            HttpResponse httpResponse = getHttpResponse(response, exception.getMessage(), UNAUTHORIZED);
+            writeResponse(response, httpResponse);
 
         } else {
-            System.out.println("Error here 1");
             HttpResponse httpResponse = getHttpResponse(response, "An error occurred. Please try again.", INTERNAL_SERVER_ERROR);
             writeResponse(response, httpResponse);
 
         }
-        log.error(exception.getMessage());
-        System.out.println("Error here 2");
+
         System.out.println(exception.getMessage());
     }
 

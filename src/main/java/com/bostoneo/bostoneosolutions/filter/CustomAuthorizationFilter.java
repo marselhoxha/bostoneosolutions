@@ -16,6 +16,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.bostoneo.bostoneosolutions.utils.ExceptionUtils.processError;
 import static java.util.Arrays.asList;
@@ -58,9 +59,11 @@ public class CustomAuthorizationFilter extends OncePerRequestFilter {
     private String getToken(HttpServletRequest request) {
         return ofNullable(request.getHeader(AUTHORIZATION))
                 .filter(header -> header.startsWith(TOKEN_PREFIX))
-                .map(token -> token.replace(TOKEN_PREFIX, EMPTY)).get();
+                .map(token -> token.replace(TOKEN_PREFIX, EMPTY))
+                .orElseThrow(() -> new IllegalArgumentException("Authorization header is missing or invalid"));
 
     }
+
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
