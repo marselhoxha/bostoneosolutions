@@ -7,6 +7,7 @@ import org.springframework.boot.web.servlet.error.ErrorController;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -32,38 +33,43 @@ import static org.springframework.http.HttpStatus.*;
 public class HandleException extends ResponseEntityExceptionHandler implements ErrorController {
     @Override
     protected ResponseEntity<Object> handleExceptionInternal(Exception exception, Object body, HttpHeaders headers, HttpStatusCode statusCode, WebRequest request) {
-        return new ResponseEntity<>(HttpResponse.builder()
-                .timeStamp(now().toString())
-                .reason(exception.getMessage())
-                .developerMessage(exception.getMessage())
-                .status(resolve(statusCode.value()))
-                .statusCode(statusCode.value())
-                .build(), statusCode);
-
+        log.error(exception.getMessage());
+        return new ResponseEntity<>(
+                HttpResponse.builder()
+                        .timeStamp(now().toString())
+                        .reason(exception.getMessage())
+                        .developerMessage(exception.getMessage())
+                        .status(resolve(statusCode.value()))
+                        .statusCode(statusCode.value())
+                        .build(), statusCode);
     }
 
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException exception, HttpHeaders headers, HttpStatusCode statusCode, WebRequest request) {
+        log.error(exception.getMessage());
         List<FieldError> fieldErrors = exception.getBindingResult().getFieldErrors();
         String fieldMessage = fieldErrors.stream().map(FieldError::getDefaultMessage).collect(Collectors.joining(", "));
-        return new ResponseEntity<>(HttpResponse.builder()
-                .timeStamp(now().toString())
-                .reason(fieldMessage)
-                .developerMessage(exception.getMessage())
-                .status(resolve(statusCode.value()))
-                .statusCode(statusCode.value())
-                .build(), statusCode);
+        return new ResponseEntity<>(
+                HttpResponse.builder()
+                        .timeStamp(now().toString())
+                        .reason(fieldMessage)
+                        .developerMessage(exception.getMessage())
+                        .status(resolve(statusCode.value()))
+                        .statusCode(statusCode.value())
+                        .build(), statusCode);
     }
+
     @ExceptionHandler(SQLIntegrityConstraintViolationException.class)
     public ResponseEntity<HttpResponse> sQLIntegrityConstraintViolationException(SQLIntegrityConstraintViolationException exception) {
-
-        return new ResponseEntity<>(HttpResponse.builder()
-                .timeStamp(now().toString())
-                .reason(exception.getMessage().contains("Duplicate entry") ? "Information already exists" : exception.getMessage())
-                .developerMessage(exception.getMessage())
-                .status(BAD_REQUEST)
-                .statusCode(BAD_REQUEST.value())
-                .build(), BAD_REQUEST);
+        log.error(exception.getMessage());
+        return new ResponseEntity<>(
+                HttpResponse.builder()
+                        .timeStamp(now().toString())
+                        .reason(exception.getMessage().contains("Duplicate entry") ? "Information already exists" : exception.getMessage())
+                        .developerMessage(exception.getMessage())
+                        .status(BAD_REQUEST)
+                        .statusCode(BAD_REQUEST.value())
+                        .build(), BAD_REQUEST);
     }
 
     @ExceptionHandler(BadCredentialsException.class)
@@ -175,5 +181,42 @@ public class HandleException extends ResponseEntityExceptionHandler implements E
                 , BAD_REQUEST);
     }
 
+    @ExceptionHandler(DataAccessException.class)
+    public ResponseEntity<HttpResponse> dataAccessException(DataAccessException exception) {
+        log.error(exception.getMessage());
+        return new ResponseEntity<>(
+                HttpResponse.builder()
+                        .timeStamp(now().toString())
+                        .reason(processErrorMessage(exception.getMessage()))
+                        .developerMessage(processErrorMessage(exception.getMessage()))
+                        .status(BAD_REQUEST)
+                        .statusCode(BAD_REQUEST.value()).build()
+                , BAD_REQUEST);
+    }
 
+    private ResponseEntity<HttpResponse> createErrorHttpResponse(HttpStatus httpStatus, String reason, Exception exception) {
+        return new ResponseEntity<>(
+                HttpResponse.builder()
+                        .timeStamp(now().toString())
+                        .developerMessage(exception.getMessage())
+                        .reason(reason)
+                        .status(httpStatus)
+                        .statusCode(httpStatus.value()).build()
+                , httpStatus);
+    }
+
+    private String processErrorMessage(String errorMessage) {
+        if(errorMessage != null) {
+            if(errorMessage.contains("Duplicate entry") && errorMessage.contains("AccountVerifications")) {
+                return "You already verified your account.";
+            }
+            if(errorMessage.contains("Duplicate entry") && errorMessage.contains("ResetPasswordVerifications")) {
+                return "We already sent you an email to reset your password.";
+            }
+            if(errorMessage.contains("Duplicate entry")) {
+                return "Duplicate entry. Please try again.";
+            }
+        }
+        return "Some error occurred";
+    }
 }

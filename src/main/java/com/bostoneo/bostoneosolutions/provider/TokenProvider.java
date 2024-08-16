@@ -37,7 +37,7 @@ public class TokenProvider {
     public static final String AUTHORITIES = "authorities";
     private static final String BOSTONEO_SOLUTIONS_LLC = "BOSTONEO_SOLUTIONS_LLC";
     private static final String CUSTOMER_MANAGEMENT_SERVICE = "CUSTOMER_MANAGEMENT_SERVICE";
-    private static final long ACCESS_TOKEN_EXPIRATION_TIME = 30_000; //432_000_000; //1_800_000 - 30 min to expire in ms
+    private static final long ACCESS_TOKEN_EXPIRATION_TIME = 432_000_000; //1_800_000 - 30 min to expire in ms
     private static final long REFRESH_TOKEN_EXPIRATION_TIME = 432_000_000; //5 days to expire in ms
     public static final String TOKEN_CANNOT_BE_VERIFIED = "Token cannot be verified";
     @Value("${jwt.secret}")

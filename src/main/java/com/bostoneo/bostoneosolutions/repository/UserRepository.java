@@ -30,5 +30,9 @@ public interface UserRepository<T extends User> {
 
     T updateUserDetails(UpdateForm user);
 
+    void updatePassword(Long id, String currentPassword, String newPassword, String confirmNewPassword);
+
+    void updateAccountSettings(Long userId, Boolean enabled, Boolean notLocked);
+
     /* More Complex Operations */
 }

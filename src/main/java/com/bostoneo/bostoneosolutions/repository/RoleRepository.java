@@ -8,7 +8,7 @@ import java.util.Collection;
 public interface RoleRepository <T extends Role> {
     /* Basic CRUD Operations */
     T create(T data);
-    Collection<T> list (int page, int pageSize); //to be able to page the data, not grabbing all at once from db
+    Collection<T> list ();
     T get(Long id);
     T update(T data);
     Boolean delete(Long id); //boolean to determine if the operation was successful

@@ -12,7 +12,6 @@ import com.bostoneo.bostoneosolutions.repository.UserRepository;
 import com.bostoneo.bostoneosolutions.rowmapper.UserRowMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.time.DateFormatUtils;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -28,14 +27,12 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.util.Collection;
 import java.util.Date;
-import java.util.Map;
 import java.util.UUID;
 
 import static com.bostoneo.bostoneosolutions.enumeration.RoleType.ROLE_USER;
 import static com.bostoneo.bostoneosolutions.enumeration.VerificationType.ACCOUNT;
 import static com.bostoneo.bostoneosolutions.enumeration.VerificationType.PASSWORD;
 import static com.bostoneo.bostoneosolutions.query.UserQuery.*;
-import static com.bostoneo.bostoneosolutions.utils.SmsUtils.sendSMS;
 import static java.util.Map.of;
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
@@ -306,6 +303,39 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
             throw new ApiException("No user found by id: " + user.getId());
 
         } catch (Exception exception) {
+            log.error(exception.getMessage());
+            throw new ApiException("An error occurred. Please try again");
+
+        }
+    }
+
+    @Override
+    public void updatePassword(Long id, String currentPassword, String newPassword, String confirmNewPassword) {
+        if (!newPassword.equals(confirmNewPassword)) throw new ApiException("Passwords do not match. Please try again");
+        User user = get(id);
+        if (encoder.matches(currentPassword, user.getPassword())){
+            try {
+                jdbc.update(UPDATE_USER_PASSWORD_BY_ID_QUERY, of("userId", id, "password", encoder.encode(newPassword)));
+
+            }catch (Exception exception) {
+                log.error(exception.getMessage());
+                throw new ApiException("An error occurred. Please try again");
+
+            }
+
+        } else {
+            throw new ApiException("Current password is incorrect. Please try again");
+        }
+
+
+    }
+
+    @Override
+    public void updateAccountSettings(Long userId, Boolean enabled, Boolean notLocked) {
+        try {
+            jdbc.update(UPDATE_USER_SETTINGS_QUERY, of("userId", userId, "enabled", enabled, "notLocked", notLocked));
+
+        }catch (Exception exception) {
             log.error(exception.getMessage());
             throw new ApiException("An error occurred. Please try again");
 
