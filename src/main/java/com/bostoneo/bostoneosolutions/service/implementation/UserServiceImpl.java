@@ -9,6 +9,7 @@ import com.bostoneo.bostoneosolutions.repository.UserRepository;
 import com.bostoneo.bostoneosolutions.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import static com.bostoneo.bostoneosolutions.dtomapper.UserDTOMapper.fromUser;
 
@@ -87,6 +88,11 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserDTO toggleMfa(String email) {
         return mapToUserDTO(userRepository.toggleMfa(email));
+    }
+
+    @Override
+    public void updateImage(UserDTO user, MultipartFile image) {
+        userRepository.updateImage(user, image);
     }
 
 

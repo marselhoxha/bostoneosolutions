@@ -20,8 +20,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 
 import static com.bostoneo.bostoneosolutions.dtomapper.UserDTOMapper.toUser;
@@ -31,6 +35,7 @@ import static java.time.LocalDateTime.now;
 import static java.util.Map.of;
 import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 import static org.springframework.http.HttpStatus.*;
+import static org.springframework.http.MediaType.IMAGE_PNG_VALUE;
 import static org.springframework.security.authentication.UsernamePasswordAuthenticationToken.unauthenticated;
 import static org.springframework.web.servlet.support.ServletUriComponentsBuilder.fromCurrentContextPath;
 
@@ -81,7 +86,7 @@ public class UserResource {
 
     @PatchMapping("/update")
     public ResponseEntity<HttpResponse> updateUser(@RequestBody @Valid UpdateForm user) throws InterruptedException {
-        TimeUnit.SECONDS.sleep(3);
+        TimeUnit.SECONDS.sleep(2);
         UserDTO updatedUser = userService.updateUserDetails(user);
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
@@ -192,7 +197,7 @@ public class UserResource {
 
     @PatchMapping("/togglemfa")
     public ResponseEntity<HttpResponse> toggleMfa(Authentication authentication) throws InterruptedException {
-        TimeUnit.SECONDS.sleep(3);
+        TimeUnit.SECONDS.sleep(2);
         UserDTO user = userService.toggleMfa(getAuthenticatedUser(authentication).getEmail());
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
@@ -202,6 +207,26 @@ public class UserResource {
                         .status(OK)
                         .statusCode(OK.value())
                         .build());
+    }
+
+    @PatchMapping("/update/image")
+    public ResponseEntity<HttpResponse> updateProfileImage(Authentication authentication, @RequestParam("image")MultipartFile image)  {
+        UserDTO user = getAuthenticatedUser(authentication);
+        userService.updateImage(user, image);
+        return ResponseEntity.ok().body(
+                HttpResponse.builder()
+                        .data(of("user", userService.getUserById(user.getId()), "roles", roleService.getRoles()))
+                        .timeStamp(now().toString())
+                        .message("Profile image updated successfully")
+                        .status(OK)
+                        .statusCode(OK.value())
+                        .build());
+    }
+
+    @GetMapping(value = "/image/{fileName}", produces = IMAGE_PNG_VALUE)
+    public byte[] getProfileImage(@PathVariable("fileName") String fileName) throws IOException {
+
+        return Files.readAllBytes(Paths.get(System.getProperty("user.home") + "/Downloads/images/" + fileName));
     }
 
     @GetMapping("/verify/account/{key}")

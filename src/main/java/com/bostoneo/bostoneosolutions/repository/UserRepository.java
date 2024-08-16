@@ -3,6 +3,7 @@ package com.bostoneo.bostoneosolutions.repository;
 import com.bostoneo.bostoneosolutions.dto.UserDTO;
 import com.bostoneo.bostoneosolutions.form.UpdateForm;
 import com.bostoneo.bostoneosolutions.model.User;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Collection;
 
@@ -38,4 +39,5 @@ public interface UserRepository<T extends User> {
     User toggleMfa(String email);
 
 
+    void updateImage(UserDTO user, MultipartFile image);
 }

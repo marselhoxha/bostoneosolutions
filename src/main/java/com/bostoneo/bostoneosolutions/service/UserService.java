@@ -3,6 +3,7 @@ package com.bostoneo.bostoneosolutions.service;
 import com.bostoneo.bostoneosolutions.dto.UserDTO;
 import com.bostoneo.bostoneosolutions.form.UpdateForm;
 import com.bostoneo.bostoneosolutions.model.User;
+import org.springframework.web.multipart.MultipartFile;
 
 public interface UserService {
 
@@ -32,4 +33,6 @@ public interface UserService {
     void updateAccountSettings(Long userId, Boolean enabled, Boolean notLocked);
 
     UserDTO toggleMfa(String email);
+
+    void updateImage(UserDTO user, MultipartFile image);
 }
