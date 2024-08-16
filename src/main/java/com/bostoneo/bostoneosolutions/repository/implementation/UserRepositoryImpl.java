@@ -36,6 +36,7 @@ import static com.bostoneo.bostoneosolutions.query.UserQuery.*;
 import static java.util.Map.of;
 import static java.util.Objects.requireNonNull;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.time.DateFormatUtils.format;
 import static org.apache.commons.lang3.time.DateUtils.addDays;
 
@@ -339,6 +340,20 @@ public class UserRepositoryImpl implements UserRepository<User>, UserDetailsServ
             log.error(exception.getMessage());
             throw new ApiException("An error occurred. Please try again");
 
+        }
+    }
+
+    @Override
+    public User toggleMfa(String email) {
+        User user = getUserByEmail(email);
+        if(isBlank(user.getPhone())) {  throw new ApiException("Phone number is required to change MFA"); }
+        user.setUsingMFA(!user.isUsingMFA());
+        try {
+            jdbc.update(TOGGLE_USER_MFA_QUERY, of("email", email, "isUsingMfa", user.isUsingMFA()));
+            return get(user.getId());
+        } catch (Exception exception) {
+            log.error(exception.getMessage());
+            throw new ApiException("Unable to update MFA");
         }
     }
 

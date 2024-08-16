@@ -14,6 +14,8 @@ public interface UserRepository<T extends User> {
     T update(T data);
     Boolean delete(Long id); //boolean to determine if the operation was successful
 
+    /* More Complex Operations */
+
     User getUserByEmail(String email);
 
     void sendVerificationCode(UserDTO user);
@@ -33,6 +35,7 @@ public interface UserRepository<T extends User> {
     void updatePassword(Long id, String currentPassword, String newPassword, String confirmNewPassword);
 
     void updateAccountSettings(Long userId, Boolean enabled, Boolean notLocked);
+    User toggleMfa(String email);
 
-    /* More Complex Operations */
+
 }

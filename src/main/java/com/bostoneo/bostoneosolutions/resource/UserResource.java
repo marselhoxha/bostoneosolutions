@@ -190,6 +190,20 @@ public class UserResource {
                         .build());
     }
 
+    @PatchMapping("/togglemfa")
+    public ResponseEntity<HttpResponse> toggleMfa(Authentication authentication) throws InterruptedException {
+        TimeUnit.SECONDS.sleep(3);
+        UserDTO user = userService.toggleMfa(getAuthenticatedUser(authentication).getEmail());
+        return ResponseEntity.ok().body(
+                HttpResponse.builder()
+                        .data(of("user", user, "roles", roleService.getRoles()))
+                        .timeStamp(now().toString())
+                        .message("Multi-Factor Authentication updated successfully")
+                        .status(OK)
+                        .statusCode(OK.value())
+                        .build());
+    }
+
     @GetMapping("/verify/account/{key}")
     public ResponseEntity<HttpResponse> verifyAccount(@PathVariable("key") String key) {
         return ResponseEntity.ok().body(
