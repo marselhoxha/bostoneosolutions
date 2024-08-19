@@ -1,6 +1,8 @@
 package com.bostoneo.bostoneosolutions.resource;
 
 import com.bostoneo.bostoneosolutions.dto.UserDTO;
+import com.bostoneo.bostoneosolutions.enumeration.EventType;
+import com.bostoneo.bostoneosolutions.event.NewUserEvent;
 import com.bostoneo.bostoneosolutions.exception.ApiException;
 import com.bostoneo.bostoneosolutions.form.LoginForm;
 import com.bostoneo.bostoneosolutions.form.SettingsForm;
@@ -10,12 +12,14 @@ import com.bostoneo.bostoneosolutions.model.HttpResponse;
 import com.bostoneo.bostoneosolutions.model.User;
 import com.bostoneo.bostoneosolutions.model.UserPrincipal;
 import com.bostoneo.bostoneosolutions.provider.TokenProvider;
+import com.bostoneo.bostoneosolutions.service.EventService;
 import com.bostoneo.bostoneosolutions.service.RoleService;
 import com.bostoneo.bostoneosolutions.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
@@ -29,6 +33,8 @@ import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
 
 import static com.bostoneo.bostoneosolutions.dtomapper.UserDTOMapper.toUser;
+import static com.bostoneo.bostoneosolutions.enumeration.EventType.*;
+import static com.bostoneo.bostoneosolutions.utils.ExceptionUtils.processError;
 import static com.bostoneo.bostoneosolutions.utils.UserUtils.getAuthenticatedUser;
 import static com.bostoneo.bostoneosolutions.utils.UserUtils.getLoggedInUser;
 import static java.time.LocalDateTime.now;
@@ -46,15 +52,16 @@ public class UserResource {
     private static final String TOKEN_PREFIX = "Bearer ";
     private final UserService userService;
     private final RoleService roleService;
+    private final EventService eventService;
     private final AuthenticationManager authenticationManager;
     private final TokenProvider tokenProvider;
     private final HttpServletRequest request;
     private final HttpServletResponse response;
+    private final ApplicationEventPublisher publisher;
 
     @PostMapping("/login")
     public ResponseEntity<HttpResponse> login(@RequestBody @Valid LoginForm loginForm) {
-        Authentication authentication = authenticate(loginForm.getEmail(), loginForm.getPassword());
-        UserDTO user = getLoggedInUser(authentication);
+        UserDTO user = authenticate(loginForm.getEmail(), loginForm.getPassword());
         return user.isUsingMFA() ? sendVerificationCode(user) : sendResponse(user);
     }
 
@@ -77,7 +84,7 @@ public class UserResource {
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
                         .timeStamp(now().toString())
-                        .data(of("user", user, "roles", roleService.getRoles()))
+                        .data(of("user", user,"events", eventService.getEventsByUserId(user.getId()),"roles", roleService.getRoles()))
                         .message("Profile Retrieved successfully")
                         .status(OK)
                         .statusCode(OK.value())
@@ -85,13 +92,13 @@ public class UserResource {
     }
 
     @PatchMapping("/update")
-    public ResponseEntity<HttpResponse> updateUser(@RequestBody @Valid UpdateForm user) throws InterruptedException {
-        TimeUnit.SECONDS.sleep(2);
+    public ResponseEntity<HttpResponse> updateUser(@RequestBody @Valid UpdateForm user)  {
         UserDTO updatedUser = userService.updateUserDetails(user);
+        publisher.publishEvent(new NewUserEvent(updatedUser.getEmail(), PROFILE_UPDATE));
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
                         .timeStamp(now().toString())
-                        .data(of("user", updatedUser))
+                        .data(of("user", updatedUser,"events", eventService.getEventsByUserId(user.getId()),"roles", roleService.getRoles()))
                         .message("User updated successfully")
                         .status(OK)
                         .statusCode(OK.value())
@@ -103,6 +110,7 @@ public class UserResource {
     @GetMapping("/verify/code/{email}/{code}")
     public ResponseEntity<HttpResponse> verifyCode(@PathVariable("email") String email, @PathVariable("code") String code) {
         UserDTO user = userService.verifyCode(email, code);
+        publisher.publishEvent(new NewUserEvent(user.getEmail(), LOGIN_ATTEMPT_SUCCESS));
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
                         .timeStamp(now().toString())
@@ -158,9 +166,12 @@ public class UserResource {
     public ResponseEntity<HttpResponse> updatePassword(Authentication authentication, @RequestBody @Valid UpdatePasswordForm form) {
         UserDTO userDTO = getAuthenticatedUser(authentication);
         userService.updatePassword(userDTO.getId(), form.getCurrentPassword(), form.getNewPassword(), form.getConfirmNewPassword());
+        publisher.publishEvent(new NewUserEvent(userDTO.getEmail(), PASSWORD_UPDATE));
+
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
                         .timeStamp(now().toString())
+                        .data(of("user", userService.getUserById(userDTO.getId()),"events", eventService.getEventsByUserId(userDTO.getId()),"roles", roleService.getRoles()))
                         .message("Password updated successfully")
                         .status(OK)
                         .statusCode(OK.value())
@@ -171,9 +182,10 @@ public class UserResource {
     public ResponseEntity<HttpResponse> updateUserRole(Authentication authentication, @PathVariable("roleName") String roleName) {
         UserDTO userDTO = getAuthenticatedUser(authentication);
         userService.updateUserRole(userDTO.getId(), roleName);
+        publisher.publishEvent(new NewUserEvent(userDTO.getEmail(), ROLE_UPDATE));
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
-                        .data(of("user", userService.getUserById(userDTO.getId()), "roles", roleService.getRoles()))
+                        .data(of("user", userService.getUserById(userDTO.getId()), "events", eventService.getEventsByUserId(userDTO.getId()),"roles", roleService.getRoles()))
                         .timeStamp(now().toString())
                         .message("Role updated successfully")
                         .status(OK)
@@ -185,9 +197,10 @@ public class UserResource {
     public ResponseEntity<HttpResponse> updateAccountSettings(Authentication authentication, @RequestBody @Valid SettingsForm form) {
         UserDTO userDTO = getAuthenticatedUser(authentication);
         userService.updateAccountSettings(userDTO.getId(), form.getEnabled(), form.getNotLocked());
+        publisher.publishEvent(new NewUserEvent(userDTO.getEmail(), ACCOUNT_SETTINGS_UPDATE));
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
-                        .data(of("user", userService.getUserById(userDTO.getId()), "roles", roleService.getRoles()))
+                        .data(of("user", userService.getUserById(userDTO.getId()), "events", eventService.getEventsByUserId(userDTO.getId()),"roles", roleService.getRoles()))
                         .timeStamp(now().toString())
                         .message("Account settings updated successfully")
                         .status(OK)
@@ -199,9 +212,10 @@ public class UserResource {
     public ResponseEntity<HttpResponse> toggleMfa(Authentication authentication) throws InterruptedException {
         TimeUnit.SECONDS.sleep(2);
         UserDTO user = userService.toggleMfa(getAuthenticatedUser(authentication).getEmail());
+        publisher.publishEvent(new NewUserEvent(user.getEmail(), MFA_UPDATE));
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
-                        .data(of("user", user, "roles", roleService.getRoles()))
+                        .data(of("user", user, "events", eventService.getEventsByUserId(user.getId()),"roles", roleService.getRoles()))
                         .timeStamp(now().toString())
                         .message("Multi-Factor Authentication updated successfully")
                         .status(OK)
@@ -213,9 +227,10 @@ public class UserResource {
     public ResponseEntity<HttpResponse> updateProfileImage(Authentication authentication, @RequestParam("image")MultipartFile image)  {
         UserDTO user = getAuthenticatedUser(authentication);
         userService.updateImage(user, image);
+        publisher.publishEvent(new NewUserEvent(user.getEmail(), PROFILE_PICTURE_UPDATE));
         return ResponseEntity.ok().body(
                 HttpResponse.builder()
-                        .data(of("user", userService.getUserById(user.getId()), "roles", roleService.getRoles()))
+                        .data(of("user", userService.getUserById(user.getId()), "events", eventService.getEventsByUserId(user.getId()),"roles", roleService.getRoles()))
                         .timeStamp(now().toString())
                         .message("Profile image updated successfully")
                         .status(OK)
@@ -296,11 +311,20 @@ public class UserResource {
                 .build(), NOT_FOUND);
     }*/
 
-    private Authentication authenticate(String email, String password) {
+    private UserDTO authenticate(String email, String password) {
         try {
-            return authenticationManager.authenticate(unauthenticated(email, password));
+            if(null != userService.getUserByEmail(email)){
+                publisher.publishEvent(new NewUserEvent(email, LOGIN_ATTEMPT));
+            }
+            Authentication authentication = authenticationManager.authenticate(unauthenticated(email, password));
+            UserDTO loggedInUser = getLoggedInUser(authentication);
+            if(!loggedInUser.isUsingMFA()) {
+                publisher.publishEvent(new NewUserEvent(email, LOGIN_ATTEMPT_SUCCESS));
+            }
+            return loggedInUser;
         } catch (Exception exception) {
-            //processError(request, response, exception);
+            publisher.publishEvent(new NewUserEvent(email, LOGIN_ATTEMPT_FAILURE));
+            processError(request, response, exception);
             throw new ApiException(exception.getMessage());
         }
     }
