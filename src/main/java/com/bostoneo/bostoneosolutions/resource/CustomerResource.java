@@ -36,7 +36,8 @@ public class CustomerResource {
         return ResponseEntity.ok(
                 HttpResponse.builder()
                         .timeStamp(now().toString())
-                        .data(of("user", userService.getUserByEmail(user.getEmail()), "customers", customerService.getCustomers(page.orElse(0), size.orElse(10))))
+                        .data(of("user", userService.getUserByEmail(user.getEmail()), "page", customerService.getCustomers(page.orElse(0), size.orElse(10)),
+                                "stats", customerService.getStats()))
                         .message("Customers retrieved successfully")
                         .status(OK)
                         .statusCode(OK.value())
@@ -77,7 +78,7 @@ public class CustomerResource {
         return ResponseEntity.ok(
                 HttpResponse.builder()
                         .timeStamp(now().toString())
-                        .data(of("user", userService.getUserByEmail(user.getEmail()), "customers", customerService.searchCustomers(name.orElse(""), page.orElse(0), size.orElse(10))))
+                        .data(of("user", userService.getUserByEmail(user.getEmail()), "page", customerService.searchCustomers(name.orElse(""), page.orElse(0), size.orElse(10))))
                         .message("Customers retrieved successfully")
                         .status(OK)
                         .statusCode(OK.value())
@@ -103,7 +104,7 @@ public class CustomerResource {
         return ResponseEntity.created(URI.create("")).body(
                 HttpResponse.builder()
                         .timeStamp(now().toString())
-                        .data(of("user", userService.getUserByEmail(user.getEmail()), "invoice", customerService.createInvoice(invoice)))
+                        .data(of("user", userService.getUserByEmail(user.getEmail()), "customers", customerService.createInvoice(invoice)))
                         .message("Invoice created successfully")
                         .status(CREATED)
                         .statusCode(CREATED.value())
@@ -112,13 +113,13 @@ public class CustomerResource {
 
     }
 
-    @PostMapping("/invoice/new")
+    @GetMapping("/invoice/new")
     public ResponseEntity<HttpResponse> newInvoice(@AuthenticationPrincipal UserDTO user) {
 
         return ResponseEntity.ok(
                 HttpResponse.builder()
                         .timeStamp(now().toString())
-                        .data(of("user", userService.getUserByEmail(user.getEmail()), "invoice", customerService.getCustomers()))
+                        .data(of("user", userService.getUserByEmail(user.getEmail()), "customers", customerService.getCustomers()))
                         .message("Customers retrieved successfully")
                         .status(OK)
                         .statusCode(OK.value())
@@ -133,7 +134,7 @@ public class CustomerResource {
         return ResponseEntity.ok(
                 HttpResponse.builder()
                         .timeStamp(now().toString())
-                        .data(of("user", userService.getUserByEmail(user.getEmail()), "invoices", customerService.getInvoices(page.orElse(0), size.orElse(10))))
+                        .data(of("user", userService.getUserByEmail(user.getEmail()), "page", customerService.getInvoices(page.orElse(0), size.orElse(10))))
                         .message("Invoices retrieved successfully")
                         .status(OK)
                         .statusCode(OK.value())
@@ -142,11 +143,11 @@ public class CustomerResource {
 
     @GetMapping("/invoice/get/{id}")
     public ResponseEntity<HttpResponse> getInvoice(@AuthenticationPrincipal UserDTO user, @PathVariable("id") Long id) {
-
+        Invoice invoice = customerService.getInvoice(id);
         return ResponseEntity.ok(
                 HttpResponse.builder()
                         .timeStamp(now().toString())
-                        .data(of("user", userService.getUserByEmail(user.getEmail()), "invoice", customerService.getInvoice(id)))
+                        .data(of("user", userService.getUserByEmail(user.getEmail()), "invoice", invoice, "customer", customerService.getInvoice(id).getCustomer()))
                         .message("Invoice retrieved successfully")
                         .status(OK)
                         .statusCode(OK.value())
@@ -159,8 +160,8 @@ public class CustomerResource {
         return ResponseEntity.ok(
                 HttpResponse.builder()
                         .timeStamp(now().toString())
-                        .data(of("user", userService.getUserByEmail(user.getEmail()), "invoice", customerService.getCustomers()))
-                        .message("Customers retrieved successfully")
+                        .data(of("user", userService.getUserByEmail(user.getEmail()), "customers", customerService.getCustomers()))
+                        .message(String.format("Invoice added to customer with id: %d", id))
                         .status(OK)
                         .statusCode(OK.value())
                         .build());

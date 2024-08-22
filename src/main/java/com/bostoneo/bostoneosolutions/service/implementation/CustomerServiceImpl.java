@@ -2,8 +2,10 @@ package com.bostoneo.bostoneosolutions.service.implementation;
 
 import com.bostoneo.bostoneosolutions.model.Customer;
 import com.bostoneo.bostoneosolutions.model.Invoice;
+import com.bostoneo.bostoneosolutions.model.Stats;
 import com.bostoneo.bostoneosolutions.repository.CustomerRepository;
 import com.bostoneo.bostoneosolutions.repository.InvoiceRepository;
+import com.bostoneo.bostoneosolutions.rowmapper.StatsRowMapper;
 import com.bostoneo.bostoneosolutions.service.CustomerService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -11,9 +13,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.Map;
+
+import static com.bostoneo.bostoneosolutions.query.CustomerQuery.STATS_QUERY;
 
 @Service
 @Transactional
@@ -23,6 +29,7 @@ public class CustomerServiceImpl implements CustomerService {
 
     private final CustomerRepository customerRepository;
     private final InvoiceRepository invoiceRepository;
+    private final NamedParameterJdbcTemplate jdbc;
     @Override
     public Customer createCustomer(Customer customer) {
        customer.setCreatedAt(new Date());
@@ -76,5 +83,10 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     public Invoice getInvoice(Long id) {
         return invoiceRepository.findById(id).get();
+    }
+
+    @Override
+    public Stats getStats() {
+        return jdbc.queryForObject(STATS_QUERY, Map.of(), new StatsRowMapper());
     }
 }
