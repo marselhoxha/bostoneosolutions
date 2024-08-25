@@ -6,21 +6,29 @@ import com.bostoneo.bostoneosolutions.model.Customer;
 import com.bostoneo.bostoneosolutions.model.HttpResponse;
 import com.bostoneo.bostoneosolutions.model.Invoice;
 import com.bostoneo.bostoneosolutions.model.User;
+import com.bostoneo.bostoneosolutions.report.CustomerReport;
+import com.bostoneo.bostoneosolutions.report.InvoiceReport;
 import com.bostoneo.bostoneosolutions.service.CustomerService;
 import com.bostoneo.bostoneosolutions.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import static java.time.LocalDateTime.now;
 import static java.util.Map.of;
+import static org.springframework.http.HttpHeaders.CONTENT_DISPOSITION;
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.HttpStatus.OK;
+import static org.springframework.http.MediaType.parseMediaType;
 
 @RestController
 @RequestMapping(path = "/customer")
@@ -167,5 +175,29 @@ public class CustomerResource {
                         .build());
 
 
+    }
+
+    @GetMapping("/download/report")
+    public ResponseEntity<Resource> downloadReport() {
+        List<Customer> customers = new ArrayList<>();
+        customerService.getCustomers().iterator().forEachRemaining(customers::add);
+        CustomerReport report = new CustomerReport(customers);
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("File-Name", "customer-report.xlsx");
+        headers.add(CONTENT_DISPOSITION, "attachment;File-Name=customer-report.xlsx");
+        return ResponseEntity.ok().contentType(parseMediaType("application/vnd.ms-excel"))
+                .headers(headers).body(report.exportCustomerReport());
+    }
+
+    @GetMapping("/invoice/download/invoice-report")
+    public ResponseEntity<Resource> downloadInvoiceReport(@RequestParam Optional<Integer> page, @RequestParam Optional<Integer> size) {
+        List<Invoice> invoices = new ArrayList<>();
+        customerService.getInvoices(page.orElse(0), size.orElse(10)).iterator().forEachRemaining(invoices::add);
+        InvoiceReport report = new InvoiceReport(invoices);
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("File-Name", "invoice-report.xlsx");
+        headers.add(CONTENT_DISPOSITION, "attachment;File-Name=customer-report.xlsx");
+        return ResponseEntity.ok().contentType(parseMediaType("application/vnd.ms-excel"))
+                .headers(headers).body(report.exportInvoiceReport());
     }
 }

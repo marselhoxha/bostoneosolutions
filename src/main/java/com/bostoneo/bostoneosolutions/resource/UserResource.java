@@ -312,8 +312,9 @@ public class UserResource {
     }*/
 
     private UserDTO authenticate(String email, String password) {
+        UserDTO userByEmail = userService.getUserByEmail(email);
         try {
-            if(null != userService.getUserByEmail(email)){
+            if(null != userByEmail) {
                 publisher.publishEvent(new NewUserEvent(email, LOGIN_ATTEMPT));
             }
             Authentication authentication = authenticationManager.authenticate(unauthenticated(email, password));
@@ -323,7 +324,9 @@ public class UserResource {
             }
             return loggedInUser;
         } catch (Exception exception) {
-            publisher.publishEvent(new NewUserEvent(email, LOGIN_ATTEMPT_FAILURE));
+            if(null != userByEmail) {
+                publisher.publishEvent(new NewUserEvent(email, LOGIN_ATTEMPT_FAILURE));
+            }
             processError(request, response, exception);
             throw new ApiException(exception.getMessage());
         }
